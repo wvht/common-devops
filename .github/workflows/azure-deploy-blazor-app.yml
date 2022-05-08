@@ -57,16 +57,16 @@ jobs:
         run: dotnet build '${{ inputs.PROJECT_PATH }}' --configuration ${{ inputs.BUILD_CONFIGURATION }}
 
       - name: dotnet publish 
-        run: dotnet publish '${{ inputs.PROJECT_PATH }}' -c Release -o ${{inputs.DOTNET_ROOT}}/myapp
+        run: dotnet publish '${{ inputs.PROJECT_PATH }}' -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Move environment config file over web config file.
-        run: cp ${{inputs.DOTNET_ROOT}}/myapp/web.${{ inputs.ENVIRONMENT }}.config ${{inputs.DOTNET_ROOT}}/myapp/web.config
+        run: cp ${{env.DOTNET_ROOT}}/myapp/web.${{ inputs.ENVIRONMENT }}.config ${{env.DOTNET_ROOT}}/myapp/web.config
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v2
         with:
           name: .net-app
-          path: ${{inputs.DOTNET_ROOT}}/myapp
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: ubuntu-latest
@@ -83,7 +83,7 @@ jobs:
 
       - uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_PUBLISH_DEMO }}
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
