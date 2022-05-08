@@ -1,0 +1,93 @@
+name: 'Deploy Blazor App To Azure'
+on:
+  workflow_call:
+    inputs:
+      AZURE_WEBAPP_PACKAGE_PATH: # the path to your web app project
+        type: string
+        description:  'the path to your web app project, defaults to the repository root'
+        required: false
+        default: '.'
+      DOTNET_VERSION: 
+        type: string
+        description: 'the dotnet version to use'
+        required: false
+        default: '6.0.x' 
+      BUILD_CONFIGURATION: 
+        type: string
+        description: 'the build configuration - defaults to Release'
+        required: false
+        default: 'Release' 
+      PROJECT_PATH: # the project file to build.
+        type: string
+        required: true
+        description: 'the project file to build'
+      ENVIRONMENT: # the name of the environment that the deployment relates to.
+        type: string
+        required: true
+        description: 'The name of the environment that the deployment relates to'
+      AZURE_WEBAPP_NAME: # the name of the blazor app to deploy to.
+        type: string
+        required: true
+        description: 'the name of the blazor app to deploy to.'
+    secrets:
+      AZURE_PUBLISH_SECRET:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+      
+      - name: Set up dependency caching for faster builds
+        uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Build with dotnet
+        run: dotnet build '${{ inputs.PROJECT_PATH }}' --configuration ${{ inputs.BUILD_CONFIGURATION }}
+
+      - name: dotnet publish 
+        run: dotnet publish '${{ inputs.PROJECT_PATH }}' -c Release -o ${{inputs.DOTNET_ROOT}}/myapp
+
+      - name: Move environment config file over web config file.
+        run: cp ${{inputs.DOTNET_ROOT}}/myapp/web.${{ inputs.ENVIRONMENT }}.config ${{inputs.DOTNET_ROOT}}/myapp/web.config
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v2
+        with:
+          name: .net-app
+          path: ${{inputs.DOTNET_ROOT}}/myapp
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Development'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v2
+        with:
+          name: .net-app
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_DEMO }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ inputs.AZURE_WEBAPP_NAME }}
+          package: ${{ inputs.AZURE_WEBAPP_PACKAGE_PATH }}
