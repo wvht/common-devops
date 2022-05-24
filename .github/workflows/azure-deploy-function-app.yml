@@ -31,19 +31,81 @@ on:
         required: true
 jobs:
   plan-infrastructure:
-    uses: wvht/common-devops/.github/workflows/terraform-plan.yml@v2
-    with:
-      TERRAFORM_PATH: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
-    secrets: 
-      TF_API_TOKEN:  $TF_API_TOKEN
+    name: 'Terraform - Plan Infrastructure'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-deploy/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    - name: Terraform Format
+      run: terraform fmt -check
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
 
   deploy-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    uses: wvht/common-devops/.github/workflows/terraform-deploy.yml@v2
-    with:
-      TERRAFORM_PATH: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
-    secrets: 
-      TF_API_TOKEN:  $TF_API_TOKEN
+    name: 'Terraform - Deploy Infrastructure'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-deploy/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+      # build or change infrastructure according to Terraform configuration files
+      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
     needs: plan-infrastructure
 
   build-and-deploy:
@@ -74,20 +136,83 @@ jobs:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+    needs: deploy-infrastructure
 
   plan-configure-infrastructure:
-    uses: wvht/common-devops/.github/workflows/terraform-plan.yml@v2
-    with:
-      TERRAFORM_PATH: './terraform/${{ env.ENVIRONMENT }}-configure'
-    secrets: 
-      TF_API_TOKEN:  ${{ secrets.TF_API_TOKEN }}
+    name: 'Terraform - Plan Configure Infrastructure'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-configure/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    - name: Terraform Format
+      run: terraform fmt -check
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure      
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
     needs: build-and-deploy
 
   deploy-configure-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    uses: wvht/common-devops/.github/workflows/terraform-deploy.yml@v2
-    with:
-      TERRAFORM_PATH: './terraform/${{ env.ENVIRONMENT }}-configure'
-    secrets: 
-      TF_API_TOKEN:  ${{ secrets.TF_API_TOKEN }}
+    name: 'Terraform - Deploy Configure Infrastructure'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-configure/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
+
+      # build or change infrastructure according to Terraform configuration files
+      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
     needs: plan-configure-infrastructure
