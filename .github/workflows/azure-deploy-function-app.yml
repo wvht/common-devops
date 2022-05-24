@@ -31,7 +31,7 @@ on:
         required: true
 jobs:
   plan-infrastructure:
-    name: 'Terraform - Plan Infrastructure'
+    name: 'Plan Infrastructure'
     runs-on: ubuntu-latest
     environment: production
 
@@ -72,7 +72,7 @@ jobs:
 
   deploy-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    name: 'Terraform - Deploy Infrastructure'
+    name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
     environment: production
 
@@ -109,6 +109,7 @@ jobs:
     needs: plan-infrastructure
 
   build-and-deploy:
+    name: Deploy Code
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout GitHub Action'
@@ -139,7 +140,7 @@ jobs:
     needs: deploy-infrastructure
 
   plan-configure-infrastructure:
-    name: 'Terraform - Plan Configure Infrastructure'
+    name: 'Plan Configuration'
     runs-on: ubuntu-latest
     environment: production
 
@@ -181,7 +182,7 @@ jobs:
 
   deploy-configure-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    name: 'Terraform - Deploy Configure Infrastructure'
+    name: 'Deploy Configuration'
     runs-on: ubuntu-latest
     environment: production
 
