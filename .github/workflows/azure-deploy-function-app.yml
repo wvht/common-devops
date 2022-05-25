@@ -170,9 +170,9 @@ jobs:
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
 
     # Checks that all Terraform configuration files adhere to a canonical format
-    - name: Terraform Format
-      run: terraform fmt -check
-      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure      
+    # - name: Terraform Format
+    #   run: terraform fmt -check
+    #   working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure      
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
