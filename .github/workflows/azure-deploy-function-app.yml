@@ -83,7 +83,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -120,6 +120,7 @@ jobs:
   build-and-deploy:
     name: Deploy Code
     runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -151,6 +152,7 @@ jobs:
   build-and-deploy-data-rep:
     name: Deploy Data Replication
     runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ inputs.DEPLOY_DATA_REPLICATION }}
     steps:
       - name: 'Checkout GitHub Action'
@@ -183,7 +185,7 @@ jobs:
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -225,7 +227,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     name: 'Deploy Configuration'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
