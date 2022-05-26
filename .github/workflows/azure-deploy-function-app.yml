@@ -262,7 +262,7 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
-    needs: [ build-and-deploy, build-and-deploy-data-rep ]
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
   deploy-configure-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
