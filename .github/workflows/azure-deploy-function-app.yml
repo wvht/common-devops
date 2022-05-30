@@ -227,6 +227,7 @@ jobs:
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
+    if: ${{ always() && !failure() }}
     environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
