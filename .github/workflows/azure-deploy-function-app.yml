@@ -16,6 +16,24 @@ on:
         type: string
         required: true
         description: 'the project file to build'
+      DEPLOY_DATA_REPLICATION: 
+        type: boolean
+        required: false
+        description: 'flag to determine whether to build and deploy the data replication function.'
+        default: false
+      DATA_REPLICATION_BUILD_FILE: # the data replication project file to build.
+        type: string
+        required: false
+        description: 'the data replication project file to build'
+      DEPLOY_INTEGRATION: 
+        type: boolean
+        required: false
+        description: 'flag to determine whether to build and deploy the integration function.'
+        default: false
+      INTEGRATION_BUILD_FILE: # the data replication project file to build.
+        type: string
+        required: false
+        description: 'the integration project file to build'
       FUNCTION_APP_NAME: # the name of the function app to deploy to.
         type: string
         required: true
@@ -33,7 +51,7 @@ jobs:
   plan-infrastructure:
     name: 'Plan Infrastructure'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -74,7 +92,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -111,6 +129,7 @@ jobs:
   build-and-deploy:
     name: Deploy Code
     runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -139,10 +158,77 @@ jobs:
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
     needs: deploy-infrastructure
 
+  build-and-deploy-integration:
+    name: Deploy Integration Code
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    if: ${{ inputs.DEPLOY_INTEGRATION }}
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v2
+
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.INTEGRATION_BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}-integration'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+    needs: deploy-infrastructure
+
+  build-and-deploy-data-rep:
+    name: Deploy Data Replication
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    if: ${{ inputs.DEPLOY_DATA_REPLICATION }}
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v2
+
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.DATA_REPLICATION_BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}-data-replication'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+    needs: deploy-infrastructure
+
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
-    environment: production
+    if: ${{ always() && !failure() }}
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -178,13 +264,13 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
-    needs: build-and-deploy
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
   deploy-configure-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     name: 'Deploy Configuration'
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
