@@ -90,6 +90,7 @@ jobs:
 
   deploy-infrastructure:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: plan-infrastructure
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
@@ -124,7 +125,6 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
-    needs: plan-infrastructure
 
   build-and-deploy:
     name: Deploy Code
@@ -162,6 +162,7 @@ jobs:
     name: Deploy Integration Code
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
+    needs: deploy-infrastructure
     if: ${{ inputs.DEPLOY_INTEGRATION }}
     steps:
       - name: 'Checkout GitHub Action'
@@ -189,13 +190,13 @@ jobs:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-integration'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-    needs: deploy-infrastructure
 
   build-and-deploy-data-rep:
     name: Deploy Data Replication
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ inputs.DEPLOY_DATA_REPLICATION }}
+    needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v2
@@ -222,13 +223,13 @@ jobs:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-data-replication'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-    needs: deploy-infrastructure
 
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
     if: ${{ always() && !failure() }}
     environment: ${{ inputs.ENVIRONMENT }}
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -264,10 +265,10 @@ jobs:
     - name: Terraform Plan
       run: terraform plan -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
-    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
   deploy-configure-infrastructure:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    needs: plan-configure-infrastructure
     name: 'Deploy Configuration'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
@@ -302,4 +303,3 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
-    needs: plan-configure-infrastructure
