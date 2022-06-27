@@ -67,10 +67,10 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Build with dotnet
-        run: dotnet build '${{ inputs.PROJECT_PATH }}' --configuration ${{ inputs.BUILD_CONFIGURATION }}
+        run: dotnet build '${{ inputs.APP_BUILD_FILE }}' --configuration ${{ inputs.BUILD_CONFIGURATION }}
 
       - name: dotnet publish 
-        run: dotnet publish '${{ inputs.PROJECT_PATH }}' -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish '${{ inputs.APP_BUILD_FILE }}' -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Move environment config file over web config file.
         run: cp ${{env.DOTNET_ROOT}}/myapp/web.${{ inputs.BLAZOR_ENVIRONMENT }}.config ${{env.DOTNET_ROOT}}/myapp/web.config
@@ -120,7 +120,7 @@ jobs:
         shell: bash
         run: |
           pushd './${{ inputs.PACKAGE_PATH }}'
-          dotnet build ${{ inputs.BUILD_FILE }} --configuration Release --output ./output
+          dotnet build ${{ inputs.API_BUILD_FILE }} --configuration Release --output ./output
           popd
       - uses: azure/login@v1
         with:
