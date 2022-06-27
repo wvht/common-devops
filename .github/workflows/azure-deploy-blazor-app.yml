@@ -2,7 +2,7 @@ name: 'Deploy Blazor App To Azure'
 on:
   workflow_call:
     inputs:
-      AZURE_WEBAPP_PACKAGE_PATH: # the path to your web app project
+      PACKAGE_PATH: # the path to your web app project
         type: string
         description:  'the path to your web app project, defaults to the repository root'
         required: false
@@ -17,24 +17,37 @@ on:
         description: 'the build configuration - defaults to Release'
         required: false
         default: 'Release' 
-      PROJECT_PATH: # the project file to build.
+      APP_BUILD_FILE: # the blazor app project file to build.
         type: string
         required: true
-        description: 'the project file to build'
+        description: 'the blazor app project file to build'
+      API_BUILD_FILE: # the api project file to build.
+        type: string
+        required: false
+        description: 'the api project file to build'
       ENVIRONMENT: # the name of the environment that the deployment relates to.
         type: string
         required: true
         description: 'The name of the environment that the deployment relates to'
-      AZURE_WEBAPP_NAME: # the name of the blazor app to deploy to.
+      BLAZOR_ENVIRONMENT: # the name of the blazor environment that the deployment relates to.
+        type: string
+        required: true
+        description: 'The name of the blazor environment that the deployment relates to'
+      WEB_APP_NAME: # the name of the blazor app to deploy to.
         type: string
         required: true
         description: 'the name of the blazor app to deploy to.'
+      FUNCTION_APP_NAME: # the name of the api function app to deploy to.
+        type: string
+        required: true
+        description: 'the name of the api function app to deploy to.'
     secrets:
       AZURE_PUBLISH_SECRET:
         required: true
-
+      TF_API_TOKEN:
+        required: true
 jobs:
-  build:
+  build-app:
     runs-on: ubuntu-latest
 
     steps:
@@ -60,7 +73,7 @@ jobs:
         run: dotnet publish '${{ inputs.PROJECT_PATH }}' -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Move environment config file over web config file.
-        run: cp ${{env.DOTNET_ROOT}}/myapp/web.${{ inputs.ENVIRONMENT }}.config ${{env.DOTNET_ROOT}}/myapp/web.config
+        run: cp ${{env.DOTNET_ROOT}}/myapp/web.${{ inputs.BLAZOR_ENVIRONMENT }}.config ${{env.DOTNET_ROOT}}/myapp/web.config
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v2
@@ -68,12 +81,10 @@ jobs:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-  deploy:
+  deploy-app:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    environment: ${{ inputs.ENVIRONMENT }}
 
     steps:
       - name: Download artifact from build job
@@ -89,5 +100,37 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ inputs.AZURE_WEBAPP_NAME }}
-          package: ${{ inputs.AZURE_WEBAPP_PACKAGE_PATH }}
+          app-name: ${{ inputs.WEB_APP_NAME }}
+          package: ${{ inputs.PACKAGE_PATH }}
+
+  deploy-api:
+    name: Deploy Api
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v2
+
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.PACKAGE_PATH }}'
+          dotnet build ${{ inputs.BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}'
+          slot-name: 'production'
+          package: '${{ inputs.PACKAGE_PATH }}/output'
+    needs: deploy-infrastructure
