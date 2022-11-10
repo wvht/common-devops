@@ -54,11 +54,16 @@ jobs:
     name: 'Detect Changes'
     runs-on: ubuntu-latest
     # Required permissions
-    permissions:
-      pull-requests: read
+    environment: ${{ inputs.ENVIRONMENT }}
     # Set job outputs to values from filter step
     outputs:
       infrastucture: ${{ steps.filter.outputs.infrastructure }}
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
