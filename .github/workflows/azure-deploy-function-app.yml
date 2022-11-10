@@ -48,6 +48,26 @@ on:
       TF_API_TOKEN:
         required: true
 jobs:
+
+  # JOB to run change detection
+  changes:
+    name: 'Detect Changes'
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+    # Set job outputs to values from filter step
+    outputs:
+      infrastucture: ${{ steps.filter.outputs.infrastructure }}
+    steps:
+    # For pull requests it's not necessary to checkout the code
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          infrastructure:
+            - 'terraform/**'
+
   plan-infrastructure:
     name: 'Plan Infrastructure'
     runs-on: ubuntu-latest
@@ -89,8 +109,8 @@ jobs:
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
 
   deploy-infrastructure:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: plan-infrastructure
+    needs: [plan-infrastructure, changes]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true'
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
@@ -267,8 +287,8 @@ jobs:
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
 
   deploy-configure-infrastructure:
-    if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
-    needs: plan-configure-infrastructure
+    needs: [plan-configure-infrastructure, changes]
+    if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true' }}
     name: 'Deploy Configuration'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
