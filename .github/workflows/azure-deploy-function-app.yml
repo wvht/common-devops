@@ -60,7 +60,11 @@ jobs:
     outputs:
       infrastucture: ${{ steps.filter.outputs.infrastructure }}
     steps:
-    # For pull requests it's not necessary to checkout the code
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Check Path
     - uses: dorny/paths-filter@v2
       id: filter
       with:
