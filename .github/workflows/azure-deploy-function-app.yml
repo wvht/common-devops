@@ -103,6 +103,8 @@ jobs:
 
   plan-infrastructure:
     name: 'Plan Infrastructure'
+    needs: [changes]
+    if: needs.changes.outputs.infrastructure == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
 
@@ -282,9 +284,9 @@ jobs:
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
-    if: ${{ always() && !failure() }}
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, changes]
+    if: ${{ always() && !failure() && needs.changes.outputs.infrastructure == 'true'}}
     environment: ${{ inputs.ENVIRONMENT }}
-    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
