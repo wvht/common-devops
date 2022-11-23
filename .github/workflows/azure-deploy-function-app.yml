@@ -38,6 +38,21 @@ on:
         type: string
         required: true
         description: 'the name of the azure function app to deploy to.'
+      SERVICE_FILTER: # filter to the code for the service function app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the function app. Defaults to any change outside of root, terraform and github folders'
+        default: './!(terraform|.github)/**'
+      INTEGRATION_FILTER: # filter to the code for the integration app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the integration app. Defaults to any change outside of root, terraform and github folders'
+        default: './!(terraform|.github)/**'
+      REPLICATION_FILTER: # filter to the code for the replication app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the replication app. Defaults to any change outside of root, terraform and github folders'
+        default: './!(terraform|.github)/**'
       ENVIRONMENT:
         type: string
         required: true
@@ -48,8 +63,48 @@ on:
       TF_API_TOKEN:
         required: true
 jobs:
+
+  # JOB to run change detection
+  changes:
+    name: 'Detect Changes'
+    runs-on: ubuntu-latest
+    # Required permissions
+    environment: ${{ inputs.ENVIRONMENT }}
+    # Set job outputs to values from filter step
+    outputs:
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      service: ${{ steps.filter.outputs.service}}
+      integration: ${{ steps.filter.outputs.integration}}
+      replication: ${{ steps.filter.outputs.replication}}
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Check Path
+      uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          infrastructure:
+            - 'terraform/**'
+          service:
+            - ${{ inputs.SERVICE_FILTER }}
+          integration:
+            - ${{ inputs.INTEGRATION_FILTER }}
+          replication:
+            - ${{ inputs.REPLICATION_FILTER }}
+
   plan-infrastructure:
     name: 'Plan Infrastructure'
+    needs: [changes]
+    if: needs.changes.outputs.infrastructure == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
 
@@ -89,8 +144,8 @@ jobs:
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
 
   deploy-infrastructure:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: plan-infrastructure
+    needs: [plan-infrastructure, changes]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true'
     name: 'Deploy Infrastructure'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
@@ -130,9 +185,12 @@ jobs:
     name: Deploy Code
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
+    needs: deploy-infrastructure
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && always() && !failure() && needs.changes.outputs.service == 'true' }}
+
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
         uses: actions/setup-dotnet@v1
@@ -156,17 +214,16 @@ jobs:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-    needs: deploy-infrastructure
 
   build-and-deploy-integration:
     name: Deploy Integration Code
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
-    if: ${{ inputs.DEPLOY_INTEGRATION }}
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() && needs.changes.outputs.integration == 'true' }}
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
         uses: actions/setup-dotnet@v1
@@ -195,11 +252,11 @@ jobs:
     name: Deploy Data Replication
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    if: ${{ inputs.DEPLOY_DATA_REPLICATION }}
+    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_DATA_REPLICATION && always() && !failure() && needs.changes.outputs.replication == 'true'}}
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
         uses: actions/setup-dotnet@v1
@@ -227,9 +284,9 @@ jobs:
   plan-configure-infrastructure:
     name: 'Plan Configuration'
     runs-on: ubuntu-latest
-    if: ${{ always() && !failure() }}
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, changes]
+    if: ${{ always() && !failure() && needs.changes.outputs.infrastructure == 'true'}}
     environment: ${{ inputs.ENVIRONMENT }}
-    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration ]
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -267,8 +324,8 @@ jobs:
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
 
   deploy-configure-infrastructure:
-    if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
-    needs: plan-configure-infrastructure
+    needs: [plan-configure-infrastructure, changes]
+    if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true' }}
     name: 'Deploy Configuration'
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
