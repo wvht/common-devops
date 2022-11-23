@@ -73,6 +73,9 @@ jobs:
     # Set job outputs to values from filter step
     outputs:
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      service: ${{ steps.filter.outputs.service}}
+      integration: ${{ steps.filter.outputs.integration}}
+      reeplication: ${{ steps.filter.outputs.replication}}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
