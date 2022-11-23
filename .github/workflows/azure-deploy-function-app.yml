@@ -116,9 +116,30 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: DoWork
-      run: echo "Plan Infrastructure Work..."
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-deploy/modules
 
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    # - name: Terraform Format
+    #   run: terraform fmt -check
+    #   working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
 
   deploy-infrastructure:
     needs: [plan-infrastructure, changes]
@@ -137,8 +158,26 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: DoWork
-      run: echo "Deploy Infrastructure Work..."
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-deploy/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
+
+      # build or change infrastructure according to Terraform configuration files
+      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-deploy
 
   build-and-deploy:
     name: Deploy Code
@@ -151,8 +190,28 @@ jobs:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v3
 
-      - name: DoWork
-        run: echo "Deploy Code Work..."
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
 
   build-and-deploy-integration:
     name: Deploy Integration Code
@@ -164,8 +223,28 @@ jobs:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v3
 
-      - name: DoWork
-        run: echo "Deploy Integration Work..."
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.INTEGRATION_BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}-integration'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
 
   build-and-deploy-data-rep:
     name: Deploy Data Replication
@@ -177,8 +256,28 @@ jobs:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v3
 
-      - name: DoWork
-        run: echo "Deploy Replication Work..."
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.DATA_REPLICATION_BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}-replication'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
 
   plan-configure-infrastructure:
     name: 'Plan Configuration'
@@ -197,8 +296,30 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: DoWork
-      run: echo "Deploy Infrastructure Configuration Plan Work..."
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-configure/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    # - name: Terraform Format
+    #   run: terraform fmt -check
+    #   working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure      
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: terraform plan -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
 
   deploy-configure-infrastructure:
     needs: [plan-configure-infrastructure, changes]
@@ -217,5 +338,23 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: DoWork
-      run: echo "Deploy Infrastructure Configuration Deployment Work..."
+    # Copy the modules folder into the working directory
+    - name: Copy Modules
+      run: cp -R ./terraform/modules ./terraform/${{ inputs.ENVIRONMENT }}-configure/modules
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
+
+      # build or change infrastructure according to Terraform configuration files
+      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -input=false
+      working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
