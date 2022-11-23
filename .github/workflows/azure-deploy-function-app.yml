@@ -38,6 +38,21 @@ on:
         type: string
         required: true
         description: 'the name of the azure function app to deploy to.'
+      SERVICE_FILTER: # filter to the code for the service function app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the function app. Defaults to any change outside of root, terraform and github folders'
+        default: './*/**!(./terraform/**|./github/**)'
+      INTEGRATION_FILTER: # filter to the code for the integration app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the integration app. Defaults to any change outside of root, terraform and github folders'
+        default: './*/**!(./terraform/**|./github/**)'
+      REPLICATION_FILTER: # filter to the code for the replication app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the replication app. Defaults to any change outside of root, terraform and github folders'
+        default: './*/**!(./terraform/**|./github/**)'
       ENVIRONMENT:
         type: string
         required: true
@@ -76,6 +91,12 @@ jobs:
         filters: |
           infrastructure:
             - 'terraform/**'
+          service:
+            - ${{ inputs.SERVICE_FILTER }}
+          integration:
+            - ${{ inputs.INTEGRATION_FILTER }}
+          replication:
+            - ${{ inputs.REPLICATION_FILTER }}
 
   plan-infrastructure:
     name: 'Plan Infrastructure'
@@ -121,6 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
+    if: ${{ always() && !failure() && needs.changes.outputs.service == 'true' }}
 
     steps:
       - name: 'Checkout GitHub Action'
@@ -134,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
-    if: ${{ inputs.DEPLOY_INTEGRATION }}
+    if: ${{ inputs.DEPLOY_INTEGRATION && always() && !failure() && needs.changes.outputs.integration == 'true' }}
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v3
@@ -146,7 +168,7 @@ jobs:
     name: Deploy Data Replication
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    if: ${{ inputs.DEPLOY_DATA_REPLICATION }}
+    if: ${{ inputs.DEPLOY_DATA_REPLICATION && always() && !failure() && needs.changes.outputs.replication == 'true'}}
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
