@@ -42,17 +42,17 @@ on:
         type: string
         required: false
         description: 'the path filter that triggers the redeployment of the function app. Defaults to any change outside of root, terraform and github folders'
-        default: './*/**!(./terraform/**|./github/**)'
+        default: './*/**!(./terraform/**|./.github/**)'
       INTEGRATION_FILTER: # filter to the code for the integration app.
         type: string
         required: false
         description: 'the path filter that triggers the redeployment of the integration app. Defaults to any change outside of root, terraform and github folders'
-        default: './*/**!(./terraform/**|./github/**)'
+        default: './*/**!(./terraform/**|./.github/**)'
       REPLICATION_FILTER: # filter to the code for the replication app.
         type: string
         required: false
         description: 'the path filter that triggers the redeployment of the replication app. Defaults to any change outside of root, terraform and github folders'
-        default: './*/**!(./terraform/**|./github/**)'
+        default: './*/**!(./terraform/**|./.github/**)'
       ENVIRONMENT:
         type: string
         required: true
