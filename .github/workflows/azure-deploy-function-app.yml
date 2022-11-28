@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
-    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && always() && !failure() && needs.changes.outputs.service == 'true' }}
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.service == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() ) }}
 
     steps:
       - name: 'Checkout GitHub Action'
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
-    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() && needs.changes.outputs.integration == 'true' }}
+    if: ${{ (( github.event_name == 'push' && needs.changes.outputs.integration == 'true' ) || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() }}
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v3
@@ -252,7 +252,7 @@ jobs:
     name: Deploy Data Replication
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_DATA_REPLICATION && always() && !failure() && needs.changes.outputs.replication == 'true'}}
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.replication == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_DATA_REPLICATION && always() && !failure() }}
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
