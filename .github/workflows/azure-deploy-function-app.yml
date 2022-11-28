@@ -186,7 +186,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: deploy-infrastructure
-    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.service == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() ) }}
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.service == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
 
     steps:
       - name: 'Checkout GitHub Action'
