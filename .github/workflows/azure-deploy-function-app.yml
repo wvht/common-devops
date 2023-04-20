@@ -57,6 +57,16 @@ on:
         type: string
         required: true
         description: 'the indentifier of the environment in use.'
+      FORCE_DOCUMENT_DEPLOYMENT:
+        type: boolean
+        required: false
+        description: ''
+        default: false
+      DOCUMENT_DEPLOYMENT_ENVIRONMENT:
+        type: string
+        required: false
+        description: ''
+        default: 'dev'
     secrets:
       AZURE_PUBLISH_SECRET:
         required: true
@@ -361,3 +371,28 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve -input=false
       working-directory: ./terraform/${{ inputs.ENVIRONMENT }}-configure
+  
+  deploy-generate-documentation:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, changes]
+    if: ${{ (build-and-deploy.conclusion == 'success' || build-and-deploy-data-rep.conclusion == 'success' || build-and-deploy-integration.conclusion == 'success') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !failure() && (inputs.DOCUMENT_DEPLOYMENT_ENVIRONMENT == inputs.ENVIRONMENT || inputs.FORCE_DOCUMENT_DEPLOYMENT == true) }}
+    steps:
+      - name: 'Checkout GHitHub Action'
+        uses: actions/checkout@v3
+
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+      
+      - run: dotnet tool update -g docfx
+      - run: docfx docs\docfx.json
+      
+      # The third-party action from peaceiris publishes a target build directory as a gh-pages branch with a commit and serves it on GitHub Pages
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/_site
