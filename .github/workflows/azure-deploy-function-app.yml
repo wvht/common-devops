@@ -60,12 +60,12 @@ on:
       FORCE_DOCUMENT_DEPLOYMENT:
         type: boolean
         required: false
-        description: ''
+        description: 'a flag override to force document deployment'
         default: false
       DOCUMENT_DEPLOYMENT_ENVIRONMENT:
         type: string
         required: false
-        description: ''
+        description: 'the name of the environment to which document deployment is made'
         default: 'dev'
     secrets:
       AZURE_PUBLISH_SECRET:
