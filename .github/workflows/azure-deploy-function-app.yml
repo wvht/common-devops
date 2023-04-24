@@ -377,7 +377,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, changes]
-    if: ${{ (github.event.build-and-deploy.conclusion == 'success' || github.event.build-and-deploy-data-rep.conclusion == 'success' || github.event.build-and-deploy-integration.conclusion == 'success') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !failure() && (inputs.DOCUMENT_DEPLOYMENT_ENVIRONMENT == inputs.ENVIRONMENT || inputs.FORCE_DOCUMENT_DEPLOYMENT == true) }}
+    if: ${{ (jobs.build-and-deploy.result == 'success' || jobs.build-and-deploy-data-rep.result == 'success' || jobs.build-and-deploy-integration.result == 'success') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !failure() && (inputs.DOCUMENT_DEPLOYMENT_ENVIRONMENT == inputs.ENVIRONMENT || inputs.FORCE_DOCUMENT_DEPLOYMENT == true) }}
     steps:
       - name: 'Checkout GHitHub Action'
         uses: actions/checkout@v3
