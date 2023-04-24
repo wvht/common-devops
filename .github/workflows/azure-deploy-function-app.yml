@@ -392,7 +392,7 @@ jobs:
       # Run the docfx command to generate documentation
       - name: Serve Documentation
         shell: bash
-        run: docfx docs\docfx.json
+        run: docfx docs/docfx.json
       
       # The third-party action from peaceiris publishes a target build directory as a gh-pages branch with a commit and serves it on GitHub Pages
       - name: Deploy
