@@ -388,7 +388,11 @@ jobs:
           dotnet-version: ${{ inputs.DOTNET_VERSION }}
       
       - run: dotnet tool update -g docfx
-      - run: docfx docs\docfx.json
+
+      # Run the docfx command to generate documentation
+      - name: Serve Documentation
+        run: docfx docs\docfx.json
+        working-directory: ./docs
       
       # The third-party action from peaceiris publishes a target build directory as a gh-pages branch with a commit and serves it on GitHub Pages
       - name: Deploy
