@@ -101,6 +101,7 @@ jobs:
       uses: dorny/paths-filter@v2
       id: filter
       with:
+        before: ${{ github.ref }}
         base: ${{ github.ref }}
         filters: |
           infrastructure:
