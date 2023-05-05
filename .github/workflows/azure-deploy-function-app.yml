@@ -101,7 +101,7 @@ jobs:
       uses: dorny/paths-filter@v2
       id: filter
       with:
-        base: ${{ inputs.ENVIRONMENT }}
+        base: ${{ github.base_ref }}
         filters: |
           infrastructure:
             - 'terraform/**'
