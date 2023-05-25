@@ -101,7 +101,7 @@ jobs:
       uses: dorny/paths-filter@v2
       id: filter
       with:
-        base: ${{ github.base_ref }}
+        base: ${{ github.event_name == 'workflow_dispatch' && github.base_ref || github.ref }}
         filters: |
           infrastructure:
             - 'terraform/**'
