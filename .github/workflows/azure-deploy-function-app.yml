@@ -25,10 +25,19 @@ on:
         type: string
         required: false
         description: 'the data replication project file to build'
+      DEPLOY_THROUGHPUT_REGULATOR: 
+        type: boolean
+        required: false
+        description: 'flag to determine whether to build and deploy the throughput regulator function.'
+        default: false
+      THROUGHPUT_REGULATOR_BUILD_FILE: # the data replication project file to build.
+        type: string
+        required: false
+        description: 'the data replication project file to build'
       DEPLOY_INTEGRATION: 
         type: boolean
         required: false
-        description: 'flag to determine whether to build and deploy the integration function.'
+        description: 'flag to determine whether to build and deploy the throughput regulator function.'
         default: false
       INTEGRATION_BUILD_FILE: # the data replication project file to build.
         type: string
@@ -49,6 +58,11 @@ on:
         description: 'the path filter that triggers the redeployment of the integration app. Defaults to any change outside of root, terraform and github folders'
         default: './!(terraform|.github)/**'
       REPLICATION_FILTER: # filter to the code for the replication app.
+        type: string
+        required: false
+        description: 'the path filter that triggers the redeployment of the replication app. Defaults to any change outside of root, terraform and github folders'
+        default: './!(terraform|.github)/**'
+      THROUGHPUT_FILTER: # filter to the code for the replication app.
         type: string
         required: false
         description: 'the path filter that triggers the redeployment of the replication app. Defaults to any change outside of root, terraform and github folders'
@@ -76,6 +90,7 @@ jobs:
       service: ${{ steps.filter.outputs.service}}
       integration: ${{ steps.filter.outputs.integration}}
       replication: ${{ steps.filter.outputs.replication}}
+      throughput: ${{ steps.filter.outputs.throughput}}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -101,7 +116,9 @@ jobs:
             - ${{ inputs.INTEGRATION_FILTER }}
           replication:
             - ${{ inputs.REPLICATION_FILTER }}
-
+          throughput:
+            - ${{ inputs.THROUGHPUT_FILTER }}
+  
   plan-infrastructure:
     name: 'Plan Infrastructure'
     needs: [changes]
@@ -279,6 +296,39 @@ jobs:
         id: fa
         with:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-replication'
+          slot-name: 'production'
+          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+
+  build-and-deploy-tp-reg:
+    name: Deploy Throughput Regulator
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.ENVIRONMENT }}
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.replication == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_THROUGHPUT_REGULATOR && always() && !failure() }}
+    needs: deploy-infrastructure
+    steps:
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@v3
+
+      - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+
+      - name: 'Resolve Project Dependencies Using Dotnet'
+        shell: bash
+        run: |
+          pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet build ${{ inputs.THROUGHPUT_REGULATOR_BUILD_FILE }} --configuration Release --output ./output
+          popd
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
+
+      - name: 'Run Azure Functions Action'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: '${{ inputs.FUNCTION_APP_NAME }}-tpr'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
 
