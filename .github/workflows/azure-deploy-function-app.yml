@@ -11,7 +11,7 @@ on:
         type: string
         description: 'the dotnet version to use'
         required: false
-        default: '8.0.x' 
+        default: '6.0.x' 
       BUILD_FILE: # the project file to build.
         type: string
         required: true
@@ -322,7 +322,7 @@ jobs:
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: ${{ inputs.DOTNET_VERSION }}
+          dotnet-version: '6.0.x'
 
       - name: 'Resolve Project Dependencies Using Dotnet'
         shell: bash
