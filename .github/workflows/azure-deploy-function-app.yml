@@ -313,7 +313,7 @@ jobs:
     name: Deploy Throughput Regulator
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.replication == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_THROUGHPUT_REGULATOR && always() && !failure() }}
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.throughput == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_THROUGHPUT_REGULATOR && always() && !failure() }}
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
