@@ -437,7 +437,7 @@ jobs:
         with:
           dotnet-version: ${{ inputs.DOTNET_VERSION }}
       
-      - run: dotnet tool update -g docfx
+      - run: dotnet tool update -g docfx --version 2.75.*
 
       # Run the docfx command to generate documentation
       - name: Serve Documentation
