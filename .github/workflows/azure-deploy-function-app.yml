@@ -110,10 +110,10 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Check Path
-      uses: dorny/paths-filter@v2
+      uses: dorny/paths-filter@v3
       id: filter
       with:
         base: ${{ github.ref }}
@@ -144,7 +144,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
@@ -152,7 +152,7 @@ jobs:
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v3
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -186,7 +186,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
@@ -194,7 +194,7 @@ jobs:
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v3
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -218,10 +218,10 @@ jobs:
 
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.DOTNET_VERSION }}
 
@@ -251,7 +251,7 @@ jobs:
     if: ${{ (( github.event_name == 'push' && needs.changes.outputs.integration == 'true' ) || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() }}
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
         uses: actions/setup-dotnet@v1
@@ -284,10 +284,10 @@ jobs:
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.DOTNET_VERSION }}
 
@@ -317,10 +317,10 @@ jobs:
     needs: deploy-infrastructure
     steps:
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup DotNet 8.0.x Environment
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
@@ -357,7 +357,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
@@ -365,7 +365,7 @@ jobs:
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v3
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -399,7 +399,7 @@ jobs:
     steps:
     # Checkout the repository to the GitHub Actions runner
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
@@ -407,7 +407,7 @@ jobs:
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+      uses: hashicorp/setup-terraform@v3
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
@@ -430,10 +430,10 @@ jobs:
     if: ${{ (needs.build-and-deploy.result == 'success' || needs.build-and-deploy-data-rep.result == 'success' || needs.build-and-deploy-integration.result == 'success') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !failure() && (inputs.DOCUMENT_DEPLOYMENT_ENVIRONMENT == inputs.ENVIRONMENT || inputs.FORCE_DOCUMENT_DEPLOYMENT == true) }}
     steps:
       - name: 'Checkout GHitHub Action'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup DotNet ${{ inputs.DOTNET_VERSION }} Environment
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ inputs.DOTNET_VERSION }}
       
