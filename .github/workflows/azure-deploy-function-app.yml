@@ -297,7 +297,7 @@ jobs:
           pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build ${{ inputs.DATA_REPLICATION_BUILD_FILE }} --configuration Release --output ./output
           popd
-      - uses: azure/login@v1
+      - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
 
@@ -330,7 +330,7 @@ jobs:
           pushd './${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build ${{ inputs.THROUGHPUT_REGULATOR_BUILD_FILE }} --configuration Release --output ./output
           popd
-      - uses: azure/login@v1
+      - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_PUBLISH_SECRET }}
 
@@ -446,7 +446,7 @@ jobs:
       
       # The third-party action from peaceiris publishes a target build directory as a gh-pages branch with a commit and serves it on GitHub Pages
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/_site
