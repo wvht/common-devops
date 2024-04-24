@@ -45,12 +45,12 @@ on:
         type: string
         required: false
         description: 'the file filter that detects if the app has changed'
-        default: '*App/**'
+        default: './*App/**'
       API_FILTER: # 
         type: string
         required: false
         description: 'the file filter that detects if the api has changed'
-        default: '*Api/**'
+        default: './*Api/**'
       INFRASTUCTURE_FILTER: # 
         type: string
         required: false
