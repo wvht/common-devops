@@ -217,9 +217,10 @@ jobs:
           path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy-app:
+    if: ${{ ((github.event_name == 'push' && needs.changes.outputs.app == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
     name: Deploy App
     runs-on: ubuntu-latest
-    needs: build-app
+    needs: [build-app, changes]
     environment: ${{ inputs.ENVIRONMENT }}
 
     steps:
