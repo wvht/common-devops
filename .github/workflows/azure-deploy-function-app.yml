@@ -213,7 +213,7 @@ jobs:
     name: Deploy Code
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, changes]
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.service == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
 
     steps:
@@ -247,7 +247,7 @@ jobs:
     name: Deploy Integration Code
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, changes]
     if: ${{ (( github.event_name == 'push' && needs.changes.outputs.integration == 'true' ) || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() }}
     steps:
       - name: 'Checkout GitHub Action'
@@ -281,7 +281,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.replication == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_DATA_REPLICATION && always() && !failure() }}
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, changes]
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
@@ -314,7 +314,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.throughput == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_THROUGHPUT_REGULATOR && always() && !failure() }}
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, changes]
     steps:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@v4
