@@ -73,7 +73,7 @@ jobs:
     outputs:
       app: ${{ steps.filter.outputs.app }}
       api: ${{ steps.filter.outputs.api}}
-
+      infrastructure: ${{ steps.filter.outputs.infrastructure}}
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
       run:
