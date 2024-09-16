@@ -245,7 +245,7 @@ jobs:
 
       - name: Set .NET Version in Azure App Service
         run: |
-          az webapp config set --name ${{ inputs.WEB_APP_NAME }} --resource-group wvh${{ inputs.ENVIRONMENT }}-rg-serverless-apps --linux-fx-version "DOTNETCORE|8.0"
+          az webapp config set --resource-group wvh${{ inputs.ENVIRONMENT }}-rg-serverless-apps --name ${{ inputs.WEB_APP_NAME }} --net-framework-version "v8.0" --debug
 
   deploy-api:
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.api == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
