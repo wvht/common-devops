@@ -240,6 +240,9 @@ jobs:
           app-name: ${{ inputs.WEB_APP_NAME }}
           package: ${{ inputs.PACKAGE_PATH }}
 
+      - name: Check .NET Version
+        run: dotnet --version
+
   deploy-api:
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.api == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
     name: Deploy Api
