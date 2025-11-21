@@ -141,7 +141,7 @@ jobs:
 
   build-and-deploy:
     name: Deploy Code
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
     needs: [changes]
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.service == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
@@ -175,7 +175,7 @@ jobs:
 
   build-and-deploy-integration:
     name: Deploy Integration Code
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
     needs: [changes]
     if: ${{ (( github.event_name == 'push' && needs.changes.outputs.integration == 'true' ) || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_INTEGRATION && always() && !failure() }}
@@ -208,7 +208,7 @@ jobs:
 
   build-and-deploy-data-rep:
     name: Deploy Data Replication
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.replication == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_DATA_REPLICATION && always() && !failure() }}
     needs: [changes]
@@ -241,7 +241,7 @@ jobs:
 
   build-and-deploy-tp-reg:
     name: Deploy Throughput Regulator
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.throughput == 'true') || github.event_name == 'workflow_dispatch') && inputs.DEPLOY_THROUGHPUT_REGULATOR && always() && !failure() }}
     needs: [changes]
@@ -274,7 +274,7 @@ jobs:
 
   plan-configure-infrastructure:
     name: 'Plan Configuration'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, build-and-deploy-tp-reg, changes]
     if: ${{ always() && !failure() && needs.changes.outputs.infrastructure == 'true'}}
     environment: ${{ inputs.ENVIRONMENT }}
@@ -318,7 +318,7 @@ jobs:
     needs: [plan-configure-infrastructure, changes]
     if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true' }}
     name: 'Deploy Configuration'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
@@ -354,7 +354,7 @@ jobs:
   
   deploy-generate-documentation:
     name: Generate Documentation
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ubuntu-privatenetworking]
     environment: ${{ inputs.ENVIRONMENT }}
     needs: [ build-and-deploy, build-and-deploy-data-rep , build-and-deploy-integration, changes]
     if: ${{ (needs.build-and-deploy.result == 'success' || needs.build-and-deploy-data-rep.result == 'success' || needs.build-and-deploy-integration.result == 'success') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && !failure() && (inputs.DOCUMENT_DEPLOYMENT_ENVIRONMENT == inputs.ENVIRONMENT || inputs.FORCE_DOCUMENT_DEPLOYMENT == true) }}
