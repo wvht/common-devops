@@ -70,11 +70,7 @@ on:
       ENVIRONMENT:
         type: string
         required: true
-        description: 'the indentifier of the environment in use e.g. wvhdev, wvhtest, wvhprod.'
-      ENVIRONMENT_SHORT:
-        type: string
-        required: true
-        description: 'the short indentifier of the environment in use e.g. dev, test, prod'
+        description: 'the indentifier of the environment in use e.g. dev, test, prod.'
       FORCE_DOCUMENT_DEPLOYMENT:
         type: boolean
         required: false
@@ -295,7 +291,7 @@ jobs:
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
-      run: cp -R ./terraform/modules ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}/modules
+      run: cp -R ./terraform/modules ./terraform/environments/${{ inputs.ENVIRONMENT }}/modules
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
@@ -306,17 +302,17 @@ jobs:
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
       run: terraform init
-      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}
+      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT }}
 
     # Checks that all Terraform configuration files adhere to a canonical format
     # - name: Terraform Format
     #   run: terraform fmt -check
-    #   working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}
+    #   working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT }}
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
       run: terraform plan -input=false
-      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}
+      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT }}
 
   deploy-configure-infrastructure:
     needs: [plan-configure-infrastructure, changes]
@@ -337,7 +333,7 @@ jobs:
 
     # Copy the modules folder into the working directory
     - name: Copy Modules
-      run: cp -R ./terraform/modules ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}/modules
+      run: cp -R ./terraform/modules ./terraform/environments/${{ inputs.ENVIRONMENT }}/modules
 
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
@@ -348,13 +344,13 @@ jobs:
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
     - name: Terraform Init
       run: terraform init
-      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}
+      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT }}
 
       # build or change infrastructure according to Terraform configuration files
       # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
     - name: Terraform Apply
       run: terraform apply -auto-approve -input=false
-      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT_SHORT }}
+      working-directory: ./terraform/environments/${{ inputs.ENVIRONMENT }}
   
   deploy-generate-documentation:
     name: Generate Documentation
