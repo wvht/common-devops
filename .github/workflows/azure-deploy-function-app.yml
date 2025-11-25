@@ -171,7 +171,7 @@ jobs:
         with:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}'
           slot-name: 'production'
-          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          package: './output'
 
   build-and-deploy-integration:
     name: Deploy Integration Code
@@ -204,7 +204,7 @@ jobs:
         with:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-integration'
           slot-name: 'production'
-          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          package: './output'
 
   build-and-deploy-data-rep:
     name: Deploy Data Replication
@@ -237,9 +237,7 @@ jobs:
         with:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-replication'
           slot-name: 'production'
-          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-        env:
-          SCM_DO_BUILD_DURING_DEPLOYMENT: true
+          package: './output'
 
   build-and-deploy-tp-reg:
     name: Deploy Throughput Regulator
@@ -272,7 +270,7 @@ jobs:
         with:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-tpr'
           slot-name: 'production'
-          package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          package: './output'
 
   plan-configure-infrastructure:
     name: 'Plan Configuration'
