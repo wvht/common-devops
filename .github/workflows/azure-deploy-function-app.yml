@@ -238,6 +238,8 @@ jobs:
           app-name: '${{ inputs.FUNCTION_APP_NAME }}-replication'
           slot-name: 'production'
           package: '${{ inputs.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+        env:
+          SCM_DO_BUILD_DURING_DEPLOYMENT: true
 
   build-and-deploy-tp-reg:
     name: Deploy Throughput Regulator
