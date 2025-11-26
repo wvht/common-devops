@@ -43,7 +43,7 @@ on:
         type: string
         required: false
         description: 'the integration project file to build'
-      FUNCTION_APP_NAME: # the name of the function app to deploy to.
+      MODULE_NAME: # the name of the module being deployed.
         type: string
         required: true
         description: 'the name of the azure function app to deploy to.'
@@ -85,17 +85,24 @@ on:
         type: string
         required: false
         description: 'the name of the azure location being deployed to'
-        default: 'uksouth'
+        default: ${{ vars.AZURE_LOCATION }}
       LOCATION_SHORT:
         type: string
         required: false
         description: 'the short name of the azure location being deployed to'
-        default: 'uks'
+        default: ${{ vars.AZURE_LOCATION_SHORT }}
     secrets:
       AZURE_PUBLISH_SECRET:
         required: true
       TF_API_TOKEN:
         required: true
+
+env:
+  FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
+  REP_FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-rep-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
+  INT_FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-int-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
+  TPR_FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-tpr-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
+
 jobs:
 
   # JOB to run change detection
@@ -140,6 +147,9 @@ jobs:
             - ${{ inputs.THROUGHPUT_FILTER }}
 
   build-and-deploy:
+    env:
+      ACTIONS_RUNNER_DEBUG: true
+      ACTIONS_STEP_DEBUG: true
     name: Deploy Code
     runs-on: ubuntu-privatenetworking
     environment: ${{ inputs.ENVIRONMENT }}
@@ -169,7 +179,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: '${{ inputs.FUNCTION_APP_NAME }}'
+          app-name: ${{ env.FUNCTION_APP_NAME }}
           slot-name: 'production'
           package: './output'
 
@@ -202,7 +212,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: '${{ inputs.FUNCTION_APP_NAME }}-integration'
+          app-name: ${{ env.INT_FUNCTION_APP_NAME }}
           slot-name: 'production'
           package: './output'
 
@@ -235,7 +245,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: '${{ inputs.FUNCTION_APP_NAME }}-replication'
+          app-name: ${{ env.REP_FUNCTION_APP_NAME }}
           slot-name: 'production'
           package: './output'
 
@@ -268,7 +278,7 @@ jobs:
         uses: Azure/functions-action@v1
         id: fa
         with:
-          app-name: '${{ inputs.FUNCTION_APP_NAME }}-tpr'
+          app-name: ${{ env.TPR_FUNCTION_APP_NAME }}
           slot-name: 'production'
           package: './output'
 
