@@ -41,6 +41,10 @@ on:
         type: string
         required: true
         description: 'the name of the api function app to deploy to.'
+      MODULE_NAME: # the name of the module being deployed.
+        type: string
+        required: true
+        description: 'the name of the azure app to deploy to.'
       APP_FILTER: # 
         type: string
         required: false
@@ -56,17 +60,31 @@ on:
         required: false
         description: 'the file filter that detects if the infrastructure has changed'
         default: 'terraform/**'
+      LOCATION:
+        type: string
+        required: false
+        description: 'the name of the azure location being deployed to'
+        default: ${{ vars.AZURE_LOCATION }}
+      LOCATION_SHORT:
+        type: string
+        required: false
+        description: 'the short name of the azure location being deployed to'
+        default: ${{ vars.AZURE_LOCATION_SHORT }}
     secrets:
       AZURE_PUBLISH_SECRET:
         required: true
       TF_API_TOKEN:
         required: true
+
+env:
+  WEB_APP_NAME: 'app-wvht-${{ inputs.MODULE_NAME }}-spa-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-001'
+  FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-api-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
 jobs:
 
   # JOB to run change detection
   changes:
     name: 'Detect Changes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     # Required permissions
     environment: ${{ inputs.ENVIRONMENT }}
     # Set job outputs to values from filter step
@@ -101,7 +119,7 @@ jobs:
     if: needs.changes.outputs.infrastructure == 'true'
     name: 'Plan Infrastructure'
     needs: [changes]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
@@ -143,7 +161,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true'
     needs: [plan-infrastructure, changes]
     name: 'Deploy Infrastructure'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
@@ -180,7 +198,7 @@ jobs:
   build-app:
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.app == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
     name: Build App
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     needs: [deploy-infrastructure, changes]
     env:
       DOTNET_ROOT:
@@ -219,7 +237,7 @@ jobs:
   deploy-app:
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.app == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
     name: Deploy App
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     needs: [build-app, changes]
     environment: ${{ inputs.ENVIRONMENT }}
 
@@ -247,7 +265,7 @@ jobs:
   deploy-api:
     if: ${{ ((github.event_name == 'push' && needs.changes.outputs.api == 'true') || github.event_name == 'workflow_dispatch' ) && always() && !failure() }}
     name: Deploy Api
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     needs: [deploy-infrastructure, changes]
     environment: ${{ inputs.ENVIRONMENT }}
     steps:
@@ -280,7 +298,7 @@ jobs:
   plan-configure-infrastructure:
     if: ${{ always() && !failure() && needs.changes.outputs.infrastructure == 'true'}}
     name: 'Plan Configuration'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     environment: ${{ inputs.ENVIRONMENT }}
     needs: [ deploy-app, deploy-api, changes ]
 
@@ -323,7 +341,7 @@ jobs:
     if: ${{ always() && !failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.changes.outputs.infrastructure == 'true' }}
     needs: [plan-configure-infrastructure, changes]
     name: 'Deploy Configuration'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-privatenetworking
     environment: ${{ inputs.ENVIRONMENT }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
