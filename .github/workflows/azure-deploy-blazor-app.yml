@@ -69,8 +69,8 @@ on:
         required: true
 
 env:
-  WEB_APP_NAME: 'app-wvht-${{ inputs.MODULE_NAME }}-spa-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-001'
-  FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-api-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
+  WEB_APP_NAME: 'app-wvht-${{ inputs.MODULE_NAME }}-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-001'
+  FUNCTION_APP_NAME: 'func-wvht-${{ inputs.MODULE_NAME }}-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-01'
 jobs:
 
   # JOB to run change detection
