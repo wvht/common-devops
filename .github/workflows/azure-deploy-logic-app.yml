@@ -1,66 +1,102 @@
 name: Deploy Logic App to Azure
+
 on:
-  workflow_call: 
+  workflow_call:
     inputs:
-        MODULE_NAME:
-            type: string
-            description: 'name of the logic app module e.g. cff'
-            required: true
-        SOURCE_PATH: 
-            type: string
-            description: 'path to the source of the logic app'
-            required: true
-        ENVIRONMENT:
-            type: string
-            required: true
-            description: 'the indentifier of the environment in use e.g. dev, test, prod.'
-        LOCATION:
-            type: string
-            required: false
-            description: 'the name of the azure location being deployed to'
-            default: ${{ vars.AZURE_LOCATION }}
-        LOCATION_SHORT:
-            type: string
-            required: false
-            description: 'the short name of the azure location being deployed to'
-            default: ${{ vars.AZURE_LOCATION_SHORT }}
+      MODULE_NAME:
+        type: string
+        description: "Name of the Logic App module e.g. cff"
+        required: true
+
+      SOURCE_PATH:
+        type: string
+        description: "Path to the source of the Logic App"
+        required: true
+
+      ENVIRONMENT:
+        type: string
+        required: true
+        description: "Environment identifier e.g. dev, test, prod"
+
+      LOCATION:
+        type: string
+        required: false
+        description: "Azure location being deployed to"
+        default: ${{ vars.AZURE_LOCATION }}
+
+      LOCATION_SHORT:
+        type: string
+        required: false
+        description: "Short Azure location e.g. uks"
+        default: ${{ vars.AZURE_LOCATION_SHORT }}
+
     secrets:
-        AZURE_CREDENTIALS:
-            required: true
+      AZURE_CREDENTIALS:
+        required: true
+
 env:
   LOGICAPP_NAME: "logic-wvht-${{ inputs.MODULE_NAME }}-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-001"
+  RESOURCE_GROUP: "rg-wvht-logicapp-${{ inputs.MODULE_NAME }}-${{ inputs.ENVIRONMENT }}-${{ inputs.LOCATION_SHORT }}-001"
 
 jobs:
+
   Build:
+    name: Build
     runs-on: ubuntu-privatenetworking
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Easy Zip Files
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create deployment package
         uses: vimtor/action-zip@v1
         with:
           dest: ${{ github.run_id }}.zip
           files: ${{ inputs.SOURCE_PATH }}
-      - uses: actions/upload-artifact@master
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifact
           path: ${{ github.run_id }}.zip
+
+
   Deploy:
     name: Deploy
     runs-on: ubuntu-privatenetworking
-    needs: [Build] 
+    needs: Build
+
     steps:
-     - uses: azure/login@v1
-       with:
-        creds: ${{secrets.AZURE_CREDENTIALS}}
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-     - uses: actions/download-artifact@master
-       with:
-        name: build-artifact
-        path: build-art/
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: build-art
 
-     - name: Deploy to Azure Logic App
-       uses: Azure/functions-action@v1
-       id: la
-       with:
-        app-name: ${{ env.LOGICAPP_NAME }}
-        package: build-art/${{ github.run_id }}.zip
+      - name: Disable Run From Package
+        shell: bash
+        run: |
+          az webapp config appsettings delete \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --name "${{ env.LOGICAPP_NAME }}" \
+            --setting-names WEBSITE_RUN_FROM_PACKAGE
+
+      - name: Deploy Logic App
+        shell: bash
+        run: |
+          az webapp deploy \
+            --resource-group "${{ env.RESOURCE_GROUP }}" \
+            --name "${{ env.LOGICAPP_NAME }}" \
+            --src-path "build-art/${{ github.run_id }}.zip" \
+            --type zip \
+            --clean true \
+            --restart true
+
+      - name: Logout from Azure
+        if: always()
+        run: az logout
